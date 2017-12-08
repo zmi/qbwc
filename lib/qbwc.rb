@@ -3,6 +3,7 @@ require 'qbxml'
 
 module QBWC
   autoload :ActiveRecord, 'qbwc/active_record'
+  autoload :Sequel, 'qbwc/sequel'
   autoload :Controller, 'qbwc/controller'
   autoload :Version, 'qbwc/version'
   autoload :Job, 'qbwc/job'
@@ -132,7 +133,6 @@ module QBWC
     def clear_jobs
       storage_module::Job.clear_jobs
     end
-
   end
   
 end

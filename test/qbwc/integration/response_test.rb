@@ -1,6 +1,7 @@
 $:<< File.expand_path(File.dirname(__FILE__) + '/../..')
 require 'test_helper.rb'
 
+
 class ResponseTest < ActionDispatch::IntegrationTest
 
   WARN_RESPONSE = {
@@ -29,7 +30,7 @@ class ResponseTest < ActionDispatch::IntegrationTest
   def _receive_responses(*responses)
 
     # Simulate controller authenticate
-    ticket_string = QBWC::ActiveRecord::Session.new(QBWC_USERNAME, COMPANY).ticket
+    ticket_string = QBWC.storage_module::Session.new(QBWC_USERNAME, COMPANY).ticket
     assert_not_nil(ticket_string)
 
     session = QBWC::Session.new(nil, COMPANY)
@@ -149,7 +150,7 @@ class ResponseTest < ActionDispatch::IntegrationTest
     QBWC.add_job(:query_joe_customer, true, COMPANY, QueryAndDeleteWorker)
 
     # Simulate controller authenticate
-    ticket_string = QBWC::ActiveRecord::Session.new(QBWC_USERNAME, COMPANY).ticket
+    ticket_string = QBWC.storage_module::Session.new(QBWC_USERNAME, COMPANY).ticket
     session = QBWC::Session.new(nil, COMPANY)
 
     # Simulate controller receive_response
@@ -160,7 +161,7 @@ class ResponseTest < ActionDispatch::IntegrationTest
     assert_nil session.next_request
 
     # Simulate arbitrary controller action
-    session = QBWC::ActiveRecord::Session.get(ticket_string)  # simulated get_session
+    session = QBWC.storage_module::Session.get(ticket_string)  # simulated get_session
     session.save  # simulated save_session
 
   end
@@ -172,7 +173,7 @@ class ResponseTest < ActionDispatch::IntegrationTest
     QBWC.add_job(:query_joe_customer, true, COMPANY, QueryAndDeleteWorker)
 
     # Simulate controller authenticate
-    ticket_string = QBWC::ActiveRecord::Session.new(QBWC_USERNAME, COMPANY).ticket
+    ticket_string = QBWC.storage_module::Session.new(QBWC_USERNAME, COMPANY).ticket
     session = QBWC::Session.new(nil, COMPANY)
 
     # Simulate controller receive_response
@@ -183,7 +184,7 @@ class ResponseTest < ActionDispatch::IntegrationTest
     assert_nil session.next_request
 
     # Simulate controller get_last_error
-    session = QBWC::ActiveRecord::Session.get(ticket_string)  # simulated get_session
+    session = QBWC.storage_module::Session.get(ticket_string)  # simulated get_session
     session.save  # simulated save_session
 
   end

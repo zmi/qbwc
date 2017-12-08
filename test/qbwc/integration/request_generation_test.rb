@@ -265,7 +265,7 @@ class RequestGenerationTest < ActionDispatch::IntegrationTest
     simulate_response(session)
     assert_nil session.next_request
 
-    assert_match(/CustomerAddRq.*\/CustomerAddRq/m, extract_request(QBWC::ActiveRecord::Job::QbwcJob.first, session)[0])
+    assert_match(/CustomerAddRq.*\/CustomerAddRq/m, extract_request(QBWC.storage_module::Job::QbwcJob.first, session)[0])
     QBWC.jobs.each {|job| assert job.requests_provided_when_job_added == true}
   end
 
@@ -299,7 +299,7 @@ class RequestGenerationTest < ActionDispatch::IntegrationTest
     assert_match(/FullName.#{QBWC_USERNAME}.\/FullName/, request.request)
 
     expected = {[nil, ""] => [{:customer_query_rq => {:full_name => QBWC_USERNAME}}]}
-    assert_equal expected, QBWC::ActiveRecord::Job::QbwcJob.first[:requests]
+    assert_equal expected, QBWC.storage_module::Job::QbwcJob.first.requests
     QBWC.jobs.each {|job| assert job.requests_provided_when_job_added == true}
   end
 
@@ -336,14 +336,13 @@ class RequestGenerationTest < ActionDispatch::IntegrationTest
 
     assert_nil session.next_request
 
-    assert_equal multiple_requests[0], extract_request(QBWC::ActiveRecord::Job::QbwcJob.first, session)[0]
-    assert_equal multiple_requests[1], extract_request(QBWC::ActiveRecord::Job::QbwcJob.first, session)[1]
+    assert_equal multiple_requests[0], extract_request(QBWC.storage_module::Job::QbwcJob.first, session)[0]
+    assert_equal multiple_requests[1], extract_request(QBWC.storage_module::Job::QbwcJob.first, session)[1]
     QBWC.jobs.each {|job| assert job.requests_provided_when_job_added == true}
   end
 
-
-  def extract_request(ar_job, session)
-    requests = ar_job[:requests]
+  def extract_request(db_job, session)
+    requests = db_job.requests
     secondary_key = session.key.dup
     secondary_key[0] = nil # username = nil
     result = nil

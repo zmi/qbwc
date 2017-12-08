@@ -15,7 +15,7 @@ class QBWCControllerTest < ActionController::TestCase
     #p @controller.view_paths
 
     QBWC.on_error = :stop
-    QBWC::ActiveRecord::Session::QbwcSession.all.each {|qbs| qbs.destroy}
+    QBWC.storage_module::Session::QbwcSession.all.each {|qbs| qbs.destroy}
     QBWC.clear_jobs
     QBWC.set_session_initializer() {|session| }
 

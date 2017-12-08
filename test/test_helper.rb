@@ -8,6 +8,7 @@ require 'active_support'
 require 'active_record'
 require 'action_controller'
 require 'rails'
+require 'sequel'
 
 # Determine location of local wash_out gem
 # https://github.com/rubygems/rubygems/blob/master/lib/rubygems/commands/which_command.rb
@@ -25,12 +26,13 @@ ActiveSupport::Dependencies.autoload_paths << "#{wash_out_lib}/../app/helpers"
 $:<< File.expand_path(File.dirname(__FILE__) + '/../lib')
 require 'qbwc'
 require 'qbwc/controller'
-require 'qbwc/active_record'
+#require 'qbwc/active_record'
 
 COMPANY = 'c:\\QuickBooks\MyFile.QBW'
 QBWC_USERNAME = 'myUserName'
 QBWC_PASSWORD = 'myPassword'
 QBWC.api = :qb
+QBWC.storage = ENV['QBWC_STORAGE'] || 'active_record'
 
 ActiveSupport::TestCase.test_order = :random if defined? ActiveSupport::TestCase.test_order=()
 
@@ -44,6 +46,25 @@ def _inspect_routes
   puts "\n"
 end
 
+def _initialize_active_record
+  ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database => ":memory:")
+  require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/create_qbwc_jobs'
+  require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/index_qbwc_jobs'
+  require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/change_request_index'
+  require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/create_qbwc_sessions'
+  ActiveRecord::Migration.run(CreateQbwcJobs)
+  ActiveRecord::Migration.run(IndexQbwcJobs)
+  ActiveRecord::Migration.run(ChangeRequestIndex)
+  ActiveRecord::Migration.run(CreateQbwcSessions)
+end
+
+def _initialize_sequel
+  db = Sequel.connect(adapter: 'sqlite', database: ':memory:')
+  Sequel.extension :migration
+  migration = eval File.read(File.join(File.dirname(__FILE__), '../../qbwc/lib/generators/qbwc/install/templates/db/migrate/sequel/install_qbwc.rb'))
+  migration.apply(db, :up)
+end
+
 #-------------------------------------------
 # Stub Rails application
 module QbwcTestApplication
@@ -52,15 +73,7 @@ module QbwcTestApplication
       config.secret_key_base = "stub"
       config.eager_load = false
     end
-    ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database => ":memory:")
-    require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/create_qbwc_jobs'
-    require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/index_qbwc_jobs'
-    require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/change_request_index'
-    require '../qbwc/lib/generators/qbwc/install/templates/db/migrate/create_qbwc_sessions'
-    ActiveRecord::Migration.run(CreateQbwcJobs)
-    ActiveRecord::Migration.run(IndexQbwcJobs)
-    ActiveRecord::Migration.run(ChangeRequestIndex)
-    ActiveRecord::Migration.run(CreateQbwcSessions)
+
     QBWC.configure do |c|
       c.username = QBWC_USERNAME
       c.password = QBWC_PASSWORD
@@ -71,8 +84,9 @@ module QbwcTestApplication
     # Logger
     Rails.logger = Logger.new('/dev/null')  # or STDOUT
     QBWC.logger = Rails.logger
-  end
 
+    send "_initialize_#{QBWC.storage}"
+  end
 end
 
 def _assign_routes
@@ -242,7 +256,7 @@ end
 #-------------------------------------------
 def _simulate_soap_request(http_action, soap_action, soap_params)
 
-  session = QBWC::ActiveRecord::Session::QbwcSession.first
+  session = QBWC.storage_module::Session::QbwcSession.first
   unless session.blank?
     ticket = session.ticket
     soap_params = soap_params.update(:ticket => ticket)
